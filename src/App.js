@@ -6,8 +6,8 @@ import CustomHook from './pages/CustomHook'
 function App() {
   return (
     <div className="App">
-    	<Hook />
-      {/* <CustomHook /> */}      
+      <Hook />
+      {/* <CustomHook /> */}
     </div>
   )
 }

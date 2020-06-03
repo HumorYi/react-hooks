@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback, PureComponent } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useReducer, useLayoutEffect, PureComponent } from 'react'
+import { counterReducer } from '../store'
+
+const init = arg => Number(arg)
 
 export default function Hook(props) {
   const [count, setCount] = useState(0)
@@ -6,17 +9,24 @@ export default function Hook(props) {
   const [value, setValue] = useState('')
 
   /**
+   * useReducer 是 useState 的替代方案。
+   * 它接收⼀个形如 (state, action) => newState 的 reducer，
+   * 并返回当前的 state 以及与其配套的 dispatch 方法
+   */
+  const [state, dispatch] = useReducer(counterReducer, '0', init)
+
+  /**
    * 注意:
    * 依赖项数组不会作为参数传给“创建”函数。
    * 虽然从概念上来说它表现为：所有“创建”函数中引用的值都应该出现在依赖项数组中。
    * 未来编译器会更加智能，届时⾃动创建数组将成为可能
-  */
+   */
 
   /**
-    * 把“创建”函数和依赖项数组作为参数传入 useMemo ，
-    * 它仅会在某个依赖项改变时才重新计算memoized 值。
-    * 这种优化有助于避免在每次渲染时都进行高开销的计算
-  */
+   * 把“创建”函数和依赖项数组作为参数传入 useMemo ，
+   * 它仅会在某个依赖项改变时才重新计算memoized 值。
+   * 这种优化有助于避免在每次渲染时都进行高开销的计算
+   */
   const expensive = useMemo(() => {
     console.log('computed')
     let sum = 0
@@ -29,15 +39,15 @@ export default function Hook(props) {
   }, [count])
 
   /**
-    * 把内联回调函数及依赖项数组作为参数传入 useCallback ，
-    * 它将返回该回调函数的 memoized 版本，该回调函数仅在某个依赖项改变时才会更新。
-    * 当你把回调函数传递给经过优化的并使用引用相等性去避免⾮必要渲染（例例如 shouldComponentUpdate ）的子组件时，它将非常有用
-  */
+   * 把内联回调函数及依赖项数组作为参数传入 useCallback ，
+   * 它将返回该回调函数的 memoized 版本，该回调函数仅在某个依赖项改变时才会更新。
+   * 当你把回调函数传递给经过优化的并使用引用相等性去避免⾮必要渲染（例例如 shouldComponentUpdate ）的子组件时，它将非常有用
+   */
   const addClick = useCallback(() => {
-    let sum = 0;
+    let sum = 0
 
     for (let i = 0; i < count; i++) {
-    sum += i
+      sum += i
     }
 
     return sum
@@ -83,6 +93,16 @@ export default function Hook(props) {
     return () => clearInterval(timer)
   }, [])
 
+  /**
+   * 其函数签名与 useEffect 相同，但它会在所有的 DOM 变更之后同步调用effect。
+   * 可以使用它来读取 DOM 布局并同步触发重渲染。
+   * 在浏览器执行绘制之前， useLayoutEffect 内部的更新计划将被同步刷新。
+   * 尽可能使用标准的 useEffect 以避免阻塞视觉更新
+   */
+  useLayoutEffect(() => {
+    console.log('useLayoutEffect')
+  })
+
   return (
     <div>
       <h3>Hook</h3>
@@ -92,20 +112,22 @@ export default function Hook(props) {
       <p>{date.toLocaleTimeString()}</p>
       <input type="text" value={value} onChange={event => setValue(event.target.value)} />
       <Child addClick={addClick} />
+      <p>{state}</p>
+      <button onClick={() => dispatch({ type: 'ADD' })}>add</button>
     </div>
   )
 }
 
 class Child extends PureComponent {
   render() {
-    console.log("child render");
-    const { addClick } = this.props;
+    console.log('child render')
+    const { addClick } = this.props
 
     return (
-    <div>
-      <h3>Child</h3>
-      <button onClick={() => console.log(addClick())}>add</button>
-    </div>
+      <div>
+        <h3>Child</h3>
+        <button onClick={() => console.log(addClick())}>add</button>
+      </div>
     )
   }
 }
